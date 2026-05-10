@@ -5,7 +5,12 @@ from apps.users.serializers import RoleSerializer
 
 from apps.users.permissions import IsAdminUserRole
 
-
+from drf_spectacular.utils import (
+    extend_schema
+)
+@extend_schema(
+    tags=['Users']
+)
 class RoleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUserRole]
 

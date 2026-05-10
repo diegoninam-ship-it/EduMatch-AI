@@ -18,6 +18,7 @@ from apps.users.serializers.login_response_serializer import (
     responses={
         200: LoginResponseSerializer
     }
+    
 )
 class LoginView(APIView):
 

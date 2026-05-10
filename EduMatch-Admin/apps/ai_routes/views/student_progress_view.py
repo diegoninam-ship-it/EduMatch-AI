@@ -8,7 +8,13 @@ from apps.ai_routes.serializers import (
 
 from apps.users.permissions import IsAdminUserRole
 
+from drf_spectacular.utils import (
+    extend_schema
+)
 
+@extend_schema(
+    tags=['AI Routes']
+)
 class StudentProgressViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUserRole]

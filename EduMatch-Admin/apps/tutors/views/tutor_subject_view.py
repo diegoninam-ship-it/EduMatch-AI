@@ -5,7 +5,13 @@ from apps.tutors.serializers import TutorSubjectSerializer
 
 from apps.users.permissions import IsAdminUserRole
 
+from drf_spectacular.utils import (
+    extend_schema
+)
 
+@extend_schema(
+    tags=['Tutors']
+)
 class TutorSubjectViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUserRole]

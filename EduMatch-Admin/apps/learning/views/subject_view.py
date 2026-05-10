@@ -10,6 +10,14 @@ from django_filters.rest_framework import (
     DjangoFilterBackend
 )
 
+from drf_spectacular.utils import (
+    extend_schema
+)
+
+@extend_schema(
+    tags=['Learning']
+)
+
 class SubjectViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUserRole]

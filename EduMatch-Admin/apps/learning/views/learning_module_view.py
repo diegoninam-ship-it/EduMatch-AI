@@ -10,7 +10,7 @@ from drf_spectacular.utils import (
 )
 
 @extend_schema(
-    tags=['Learning Modules']
+    tags=['Learning']
 )
 class LearningModuleViewSet(viewsets.ModelViewSet):
 

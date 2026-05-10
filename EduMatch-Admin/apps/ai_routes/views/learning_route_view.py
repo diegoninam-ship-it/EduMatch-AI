@@ -26,7 +26,7 @@ from drf_spectacular.utils import (
 )
 
 @extend_schema(
-    tags=['Learning Routes']
+    tags=['AI Routes']
 )
 class LearningRouteViewSet(viewsets.ModelViewSet):
 

@@ -5,7 +5,13 @@ from apps.learning.serializers import TopicSerializer
 
 from apps.users.permissions import IsAdminUserRole
 
+from drf_spectacular.utils import (
+    extend_schema
+)
 
+@extend_schema(
+    tags=['Learning']
+)
 class TopicViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUserRole]
