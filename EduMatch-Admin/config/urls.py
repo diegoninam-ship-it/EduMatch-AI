@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/v1/', include('apps.users.urls.user_urls')),
     path('api/v1/', include('apps.learning.urls.learning_urls')),
     path('api/v1/', include('apps.tutors.urls.tutor_urls')),
+    path('api/v1/', include('apps.sessions_app.urls.session_urls')),
 ]
