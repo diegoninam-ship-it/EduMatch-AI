@@ -42,17 +42,10 @@ class UserSerializer(serializers.ModelSerializer):
 
         password = validated_data.pop('password')
 
-        role = validated_data.get('role')
-
-        user = User(**validated_data)
-
-        if role.name == Role.RoleChoices.ADMIN:
-            user.is_staff = True
-            user.is_superuser = True
-
-        user.set_password(password)
-
-        user.save()
+        user = User.objects.create_user(
+            password=password,
+            **validated_data
+        )
 
         return user
 
