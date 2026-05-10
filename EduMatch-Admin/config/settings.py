@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.sessions_app',
     'apps.ai_routes',
     'django_filters',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -156,6 +157,10 @@ REST_FRAMEWORK = {
     ),
 
     'PAGE_SIZE': 10,
+
+    'DEFAULT_SCHEMA_CLASS': (
+        'drf_spectacular.openapi.AutoSchema'
+    ),
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -171,4 +176,43 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 
     'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+SPECTACULAR_SETTINGS = {
+
+    'TITLE': 'EduMatch AI API',
+
+    'DESCRIPTION': (
+        'Backend API for EduMatch AI platform'
+    ),
+
+    'VERSION': '1.0.0',
+
+    'SERVE_INCLUDE_SCHEMA': False,
+
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+    },
+
+    'COMPONENT_SPLIT_REQUEST': True,
+
+    'SECURITY': [
+        {
+            'BearerAuth': [],
+        }
+    ],
+
+    'COMPONENTS': {
+        'securitySchemes': {
+
+            'BearerAuth': {
+
+                'type': 'http',
+
+                'scheme': 'bearer',
+
+                'bearerFormat': 'JWT',
+            }
+        }
+    },
 }

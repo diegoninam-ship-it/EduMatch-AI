@@ -21,7 +21,13 @@ from django_filters.rest_framework import (
 
 from apps.users.permissions import IsAdminUserRole
 
+from drf_spectacular.utils import (
+    extend_schema
+)
 
+@extend_schema(
+    tags=['Learning Routes']
+)
 class LearningRouteViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUserRole]

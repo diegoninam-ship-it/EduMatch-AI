@@ -12,7 +12,14 @@ from apps.users.permissions import (
     IsAdminUserRole
 )
 
+from drf_spectacular.utils import (
+    extend_schema
+)
 
+
+@extend_schema(
+    tags=['Tutors']
+)
 class TutorViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUserRole]

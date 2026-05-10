@@ -18,7 +18,13 @@ from django_filters.rest_framework import (
 
 from apps.users.permissions import IsAdminUserRole
 
+from drf_spectacular.utils import (
+    extend_schema
+)
 
+@extend_schema(
+    tags=['Sessions']
+)
 class SessionViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUserRole]

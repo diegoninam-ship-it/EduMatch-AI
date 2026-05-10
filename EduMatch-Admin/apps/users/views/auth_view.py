@@ -6,7 +6,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.serializers import LoginSerializer
 
+from drf_spectacular.utils import extend_schema
 
+from apps.users.serializers.login_response_serializer import (
+    LoginResponseSerializer
+)
+
+@extend_schema(
+    tags=['Authentication'],
+    request=LoginSerializer,
+    responses={
+        200: LoginResponseSerializer
+    }
+)
 class LoginView(APIView):
 
     permission_classes = []

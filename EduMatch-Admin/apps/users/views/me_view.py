@@ -4,7 +4,17 @@ from rest_framework.views import APIView
 
 from apps.users.permissions import IsAdminUserRole
 
+from drf_spectacular.utils import extend_schema
+from apps.users.serializers.me_serializer import (
+    MeSerializer
+)
 
+@extend_schema(
+    tags=['Users'],
+    responses={
+        200: MeSerializer
+    }
+)
 class MeView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminUserRole]
