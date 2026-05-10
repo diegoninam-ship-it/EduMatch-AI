@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class EdumatchadminConfig(AppConfig):
+class SessionsAppConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'edumatchAdmin'
+    name = 'sessions_app'
