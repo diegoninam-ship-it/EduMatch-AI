@@ -1,8 +1,11 @@
 from rest_framework.routers import DefaultRouter
+from django.urls import path
 
 from apps.users.views import (
     RoleViewSet,
-    UserViewSet
+    UserViewSet,
+    LoginView,
+    MeView
 )
 
 router = DefaultRouter()
@@ -19,4 +22,17 @@ router.register(
     basename='users'
 )
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+
+    path(
+        'auth/login/',
+        LoginView.as_view(),
+        name='login'
+    ),
+
+    path(
+        'auth/me/',
+        MeView.as_view(),
+        name='me'
+    ),
+]
