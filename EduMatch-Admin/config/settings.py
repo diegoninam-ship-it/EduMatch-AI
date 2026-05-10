@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.learning',
     'apps.tutors',
     'apps.sessions_app',
+    'apps.ai_routes',
 ]
 
 MIDDLEWARE = [
