@@ -26,11 +26,19 @@ class LoginView(APIView):
         return Response({
 
             'user': {
+
                 'id': str(user.id),
+
                 'email': user.email,
+
                 'first_name': user.first_name,
+
                 'last_name': user.last_name,
-                'role': user.role.name,
+
+                'role': {
+                    'id': str(user.role.id),
+                    'name': user.role.name
+                }
             },
 
             'access': str(refresh.access_token),
