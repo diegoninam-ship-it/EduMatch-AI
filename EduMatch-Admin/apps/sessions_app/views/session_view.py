@@ -10,6 +10,12 @@ from apps.sessions_app.services.booking_service import (
     BookingService
 )
 
+from rest_framework import filters
+
+from django_filters.rest_framework import (
+    DjangoFilterBackend
+)
+
 from apps.users.permissions import IsAdminUserRole
 
 
@@ -66,3 +72,29 @@ class SessionViewSet(viewsets.ModelViewSet):
             serializer.data,
             status=status.HTTP_201_CREATED
         )
+    
+    filter_backends = [
+    DjangoFilterBackend,
+    filters.SearchFilter,
+    filters.OrderingFilter
+    ]
+
+    filterset_fields = [
+        'status',
+        'session_date'
+    ]
+
+    search_fields = [
+        'student__full_name',
+        'tutor__user__full_name'
+    ]
+
+    ordering_fields = [
+        'session_date',
+        'created_at'
+    ]
+
+    ordering = [
+        '-session_date'
+    ]
+    

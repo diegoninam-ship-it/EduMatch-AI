@@ -5,6 +5,10 @@ from apps.learning.serializers import SubjectSerializer
 
 from apps.users.permissions import IsAdminUserRole
 
+from rest_framework import filters
+from django_filters.rest_framework import (
+    DjangoFilterBackend
+)
 
 class SubjectViewSet(viewsets.ModelViewSet):
 
@@ -13,3 +17,23 @@ class SubjectViewSet(viewsets.ModelViewSet):
     queryset = Subject.objects.all()
 
     serializer_class = SubjectSerializer
+
+    filter_backends = [
+    DjangoFilterBackend,
+    filters.SearchFilter,
+    filters.OrderingFilter
+    ]
+
+    search_fields = [
+        'name',
+        'description'
+    ]
+
+    ordering_fields = [
+        'name',
+        'created_at'
+    ]
+
+    ordering = [
+        'name'
+    ]
