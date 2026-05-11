@@ -3,47 +3,33 @@ package com.edumatch.api.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @Entity
-@Table(name = "tutores")
+@Table(name = "tutors")
 public class Tutor {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_tutor")
-    private Long idTutor;
+    @Column(name = "id", length = 32, updatable = false, nullable = false)
+    private String id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", nullable = false, unique = true)
-    private Usuario usuario;
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
-    @Column(name = "precio_sesion")
-    private Double precioSesion;
+    @Column(name = "biography", columnDefinition = "TEXT", nullable = false)
+    private String biography;
 
-    @Column(name = "descripcion", length = 500)
-    private String descripcion;
+    @Column(name = "experience_years", nullable = false)
+    private Integer experienceYears;
 
-    @Column(name = "estado", nullable = false)
-    private Boolean estado = true;
+    @Column(name = "hourly_rate", precision = 8, scale = 2, nullable = false)
+    private BigDecimal hourlyRate;
 
-    @Column(name = "biografia", length = 500)
-    private String biografia;
+    @Column(name = "rating", precision = 3, scale = 2, nullable = false)
+    private BigDecimal rating;
 
-    @Column(name = "experiencia")
-    private String experiencia;
-
-    @Column(name = "foto_url")
-    private String fotoUrl;
-
-    @Column(name = "rating_promedio", nullable = false)
-    private Double ratingPromedio = 0.0;
-
-    @Column(name = "total_sesiones", nullable = false)
-    private Integer totalSesiones = 0;
-
-    @Column(name = "ubicacion", length = 100)
-    private String ubicacion;
-
-    @Column(name = "verificado", nullable = false)
-    private Boolean verificado = false;
+    @Column(name = "is_available", nullable = false)
+    private Boolean isAvailable;
 }

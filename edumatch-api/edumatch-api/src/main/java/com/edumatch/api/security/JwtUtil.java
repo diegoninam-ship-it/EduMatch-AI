@@ -3,7 +3,6 @@ package com.edumatch.api.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -22,9 +21,11 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(String email, String role, String userId) {
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
+                .setSubject(email)
+                .claim("role", role)
+                .claim("userId", userId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getKey(), SignatureAlgorithm.HS256)
@@ -35,11 +36,15 @@ public class JwtUtil {
         return getClaims(token).getSubject();
     }
 
-    public boolean isValid(String token, UserDetails userDetails) {
-        return extractEmail(token).equals(userDetails.getUsername()) && !isExpired(token);
+    public String extractRole(String token) {
+        return getClaims(token).get("role", String.class);
     }
 
-    private boolean isExpired(String token) {
+    public String extractUserId(String token) {
+        return getClaims(token).get("userId", String.class);
+    }
+
+    public boolean isExpired(String token) {
         return getClaims(token).getExpiration().before(new Date());
     }
 

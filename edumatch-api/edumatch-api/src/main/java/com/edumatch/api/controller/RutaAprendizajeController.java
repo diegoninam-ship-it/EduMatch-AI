@@ -1,9 +1,7 @@
 package com.edumatch.api.controller;
 
-import com.edumatch.api.dto.*;
+import com.edumatch.api.entity.*;
 import com.edumatch.api.service.RutaAprendizajeService;
-import com.edumatch.api.service.UsuarioService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,85 +16,60 @@ import java.util.List;
 public class RutaAprendizajeController {
 
     private final RutaAprendizajeService rutaService;
-    private final UsuarioService usuarioService;
-
-    @GetMapping("/usuario/{idUsuario}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('ESTUDIANTE')")
-    public ResponseEntity<List<RutaAprendizajeResponse>> listarPorUsuario(@PathVariable Long idUsuario) {
-        return ResponseEntity.ok(rutaService.listarPorUsuario(idUsuario));
-    }
 
     @GetMapping("/mis-rutas")
-    public ResponseEntity<List<RutaAprendizajeResponse>> misRutas(Authentication authentication) {
-        UsuarioResponse me = usuarioService.obtenerPorEmail(authentication.getName());
-        return ResponseEntity.ok(rutaService.listarPorUsuario(me.getIdUsuario()));
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<LearningRoute>> misRutas(Authentication auth) {
+        String userId = auth.getCredentials().toString();
+        return ResponseEntity.ok(rutaService.listarPorEstudiante(userId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RutaAprendizajeResponse> obtener(@PathVariable Long id) {
+    public ResponseEntity<LearningRoute> obtener(@PathVariable String id) {
         return ResponseEntity.ok(rutaService.obtener(id));
     }
 
-    @PostMapping("/usuario/{idUsuario}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('ESTUDIANTE')")
-    public ResponseEntity<RutaAprendizajeResponse> crear(@PathVariable Long idUsuario) {
-        return ResponseEntity.ok(rutaService.crear(idUsuario));
-    }
-
-    @PostMapping("/mi-ruta")
-    public ResponseEntity<RutaAprendizajeResponse> crearMiRuta(Authentication authentication) {
-        UsuarioResponse me = usuarioService.obtenerPorEmail(authentication.getName());
-        return ResponseEntity.ok(rutaService.crear(me.getIdUsuario()));
+    @PostMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<LearningRoute> crear(@RequestBody LearningRoute route) {
+        return ResponseEntity.ok(rutaService.crear(route));
     }
 
     @PatchMapping("/{id}/estado")
-    public ResponseEntity<RutaAprendizajeResponse> cambiarEstado(@PathVariable Long id,
-                                                                   @RequestParam String estado) {
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<LearningRoute> cambiarEstado(@PathVariable String id,
+                                                        @RequestParam String estado) {
         return ResponseEntity.ok(rutaService.cambiarEstado(id, estado));
     }
 
-    // --- Detalles ---
-
-    @GetMapping("/{id}/detalles")
-    public ResponseEntity<List<RutaDetalleResponse>> listarDetalles(@PathVariable Long id) {
-        return ResponseEntity.ok(rutaService.listarDetalles(id));
-    }
-
-    @PostMapping("/{id}/temas/{idTema}")
-    public ResponseEntity<RutaDetalleResponse> agregarTema(@PathVariable Long id,
-                                                            @PathVariable Integer idTema,
-                                                            @RequestParam(required = false) Integer orden) {
-        return ResponseEntity.ok(rutaService.agregarTema(id, idTema, orden));
-    }
-
-    @PatchMapping("/detalles/{idDetalle}/estado")
-    public ResponseEntity<RutaDetalleResponse> actualizarEstadoDetalle(@PathVariable Long idDetalle,
-                                                                         @RequestParam String estado) {
-        return ResponseEntity.ok(rutaService.actualizarEstadoDetalle(idDetalle, estado));
-    }
-
-    @DeleteMapping("/detalles/{idDetalle}")
-    public ResponseEntity<Void> eliminarDetalle(@PathVariable Long idDetalle) {
-        rutaService.eliminarDetalle(idDetalle);
-        return ResponseEntity.noContent().build();
-    }
-
-    // --- Progreso ---
-
-    @GetMapping("/progreso/usuario/{idUsuario}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('ESTUDIANTE')")
-    public ResponseEntity<List<ProgresoTemaResponse>> listarProgreso(@PathVariable Long idUsuario) {
-        return ResponseEntity.ok(rutaService.listarProgreso(idUsuario));
+    @GetMapping("/{id}/topicos")
+    public ResponseEntity<List<LearningRouteTopic>> listarTopicos(@PathVariable String id) {
+        return ResponseEntity.ok(rutaService.listarTopicos(id));
     }
 
     @GetMapping("/progreso/me")
-    public ResponseEntity<List<ProgresoTemaResponse>> miProgreso(Authentication authentication) {
-        UsuarioResponse me = usuarioService.obtenerPorEmail(authentication.getName());
-        return ResponseEntity.ok(rutaService.listarProgreso(me.getIdUsuario()));
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<StudentProgress>> miProgreso(Authentication auth) {
+        String userId = auth.getCredentials().toString();
+        return ResponseEntity.ok(rutaService.listarProgreso(userId));
     }
 
     @PostMapping("/progreso")
-    public ResponseEntity<ProgresoTemaResponse> registrarProgreso(@Valid @RequestBody ProgresoTemaRequest request) {
-        return ResponseEntity.ok(rutaService.registrarOActualizarProgreso(request));
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<StudentProgress> registrarProgreso(@RequestBody StudentProgress progress) {
+        return ResponseEntity.ok(rutaService.registrarProgreso(progress));
+    }
+
+    @GetMapping("/perfil/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<StudentProfile> miPerfil(Authentication auth) {
+        String userId = auth.getCredentials().toString();
+        return ResponseEntity.ok(rutaService.obtenerPerfil(userId));
+    }
+
+    @PutMapping("/perfil")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<StudentProfile> guardarPerfil(@RequestBody StudentProfile profile) {
+        return ResponseEntity.ok(rutaService.guardarPerfil(profile));
     }
 }

@@ -1,7 +1,7 @@
 package com.edumatch.api.security;
 
-import com.edumatch.api.entity.Usuario;
-import com.edumatch.api.repository.UsuarioRepository;
+import com.edumatch.api.entity.User;
+import com.edumatch.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;
@@ -13,17 +13,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
 
         return new org.springframework.security.core.userdetails.User(
-                usuario.getEmail(),
-                usuario.getPassword(),
-                List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().getNombre()))
+                user.getEmail(),
+                user.getPassword(),
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName()))
         );
     }
 }
