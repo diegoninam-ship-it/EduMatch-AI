@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 class LoginSerializer(serializers.Serializer):
 
-    email = serializers.EmailField()
+    correo = serializers.EmailField()
 
     password = serializers.CharField(
         write_only=True
@@ -13,7 +13,7 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, attrs):
 
-        email = attrs.get('email')
+        email = attrs.get('correo')
         password = attrs.get('password')
 
         user = authenticate(

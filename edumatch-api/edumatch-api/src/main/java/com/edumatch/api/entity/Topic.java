@@ -21,7 +21,7 @@ public class Topic {
     @Column(name = "estimated_minutes")
     private Integer estimatedMinutes;
 
-    @Column(name = "order", nullable = false)
+    @Column(name = "`order`", nullable = false)
     private Integer order;
 
     @ManyToOne(fetch = FetchType.LAZY)
