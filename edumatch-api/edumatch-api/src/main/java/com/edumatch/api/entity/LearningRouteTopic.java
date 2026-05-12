@@ -20,7 +20,7 @@ public class LearningRouteTopic {
     @JoinColumn(name = "topic_id", nullable = false)
     private Topic topic;
 
-    @Column(name = "order", nullable = false)
+    @Column(name = "`order`", nullable = false)
     private Integer order;
 
     @Column(name = "status", length = 20, nullable = false)

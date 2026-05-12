@@ -5,6 +5,7 @@ from apps.users.views import (
     RoleViewSet,
     UserViewSet,
     LoginView,
+    RegisterView,
     MeView
 )
 
@@ -28,6 +29,12 @@ urlpatterns = router.urls + [
         'auth/login/',
         LoginView.as_view(),
         name='login'
+    ),
+
+    path(
+        'auth/register/',
+        RegisterView.as_view(),
+        name='register'
     ),
 
     path(

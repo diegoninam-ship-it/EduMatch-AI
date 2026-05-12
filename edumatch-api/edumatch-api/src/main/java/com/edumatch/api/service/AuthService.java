@@ -1,41 +1,66 @@
 package com.edumatch.api.service;
 
-import com.edumatch.api.client.DjangoClient;
 import com.edumatch.api.dto.AuthResponse;
 import com.edumatch.api.dto.LoginRequest;
+import com.edumatch.api.dto.RegisterRequest;
+import com.edumatch.api.entity.Usuario;
+import com.edumatch.api.repository.UsuarioRepository;
 import com.edumatch.api.security.JwtUtil;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
-    private final DjangoClient djangoClient;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
 
-    @SuppressWarnings("unchecked")
-    public AuthResponse login(LoginRequest request) {
-        try {
-            Map<String, Object> response = (Map<String, Object>) djangoClient.loginUser(
-                    request.getEmail(), request.getPassword()
-            );
-            Map<String, Object> user = (Map<String, Object>) response.get("user");
-            Map<String, Object> role = (Map<String, Object>) user.get("role");
+    public AuthService(UsuarioRepository usuarioRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtUtil jwtUtil,
+                       AuthenticationManager authenticationManager) {
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
+    }
 
-            String email    = (String) user.get("email");
-            String userId   = (String) user.get("id");
-            String roleName = (String) role.get("name");
-            String nombre   = user.get("first_name") + " " + user.get("last_name");
-
-            String token = jwtUtil.generateToken(email, roleName, userId);
-            return new AuthResponse(token, userId, nombre, email, roleName);
-
-        } catch (Exception e) {
-            throw new BadCredentialsException("Credenciales inválidas");
+    public AuthResponse register(RegisterRequest request) {
+        if (usuarioRepository.existsByCorreo(request.getCorreo())) {
+            throw new RuntimeException("El correo ya está registrado");
         }
+
+        Usuario usuario = new Usuario();
+        usuario.setNombre(request.getNombre());
+        usuario.setCorreo(request.getCorreo());
+        usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+        usuario.setRol(request.getRol());
+
+        usuarioRepository.save(usuario);
+
+        String token = jwtUtil.generateToken(usuario.getCorreo(),
+                usuario.getRol().name(), usuario.getId().toString());
+
+        return new AuthResponse(token, usuario.getRol().name(),
+                usuario.getNombre(), usuario.getId());
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getCorreo(), request.getPassword()));
+
+        Usuario usuario = usuarioRepository.findByCorreo(request.getCorreo())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        String token = jwtUtil.generateToken(usuario.getCorreo(),
+                usuario.getRol().name(), usuario.getId().toString());
+
+        return new AuthResponse(token, usuario.getRol().name(),
+                usuario.getNombre(), usuario.getId());
     }
 }

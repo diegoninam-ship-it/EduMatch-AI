@@ -2,6 +2,7 @@ package com.edumatch.api.controller;
 
 import com.edumatch.api.dto.AuthResponse;
 import com.edumatch.api.dto.LoginRequest;
+import com.edumatch.api.dto.RegisterRequest;
 import com.edumatch.api.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
+    }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {

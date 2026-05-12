@@ -19,7 +19,7 @@ public class AvailabilitySlot {
     @JoinColumn(name = "tutor_id", nullable = false)
     private Tutor tutor;
 
-    @Column(name = "day", length = 20, nullable = false)
+    @Column(name = "weekday", length = 20, nullable = false)
     private String day;
 
     @Column(name = "start_time", nullable = false)

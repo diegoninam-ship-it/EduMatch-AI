@@ -18,7 +18,7 @@ public class LearningModule {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "order", nullable = false)
+    @Column(name = "`order`", nullable = false)
     private Integer order;
 
     @ManyToOne(fetch = FetchType.LAZY)
