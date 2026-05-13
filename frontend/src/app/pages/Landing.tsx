@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useInView } from "motion/react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import {
   Sparkles, LogIn, UserPlus, ArrowRight, Brain,
-  Target, Zap, Shield, Star, BookOpen, Users, TrendingUp,
+  Target, Zap, Shield, Star, BookOpen, Users, TrendingUp, Eye, EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -93,33 +93,85 @@ export function Landing() {
   const [password,  setPassword]  = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Contador de intentos y bloqueo
+  const [intentosRestantes, setIntentosRestantes] = useState<number | null>(null);
+  const [segundosBloqueo,   setSegundosBloqueo]   = useState<number>(0);
+  const [bloqueado,         setBloqueado]         = useState(false);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!bloqueado || segundosBloqueo <= 0) return;
+    const interval = setInterval(() => {
+      setSegundosBloqueo((s) => {
+        if (s <= 1) { clearInterval(interval); setBloqueado(false); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [bloqueado, segundosBloqueo]);
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  try {
-    const { loginAdmin } = await import("../../api/admin");
-    const data = await loginAdmin(email, password);
-    localStorage.setItem("token",     data.token);
-    localStorage.setItem("rol",       data.rol);
-    localStorage.setItem("nombre",    data.nombre);
-    localStorage.setItem("usuarioId", String(data.usuarioId));
-    toast.success(`Bienvenido, ${data.nombre}`);
-    navigate("/admin");
-  } catch {
+    e.preventDefault();
+    if (bloqueado) return;
+    setIsLoading(true);
     try {
-      const { login } = await import("../../api/auth");
-      const data = await login(email, password);
+      const { loginAdmin } = await import("../../api/admin");
+      const data = await loginAdmin(email, password);
+      localStorage.setItem("token",     data.token);
+      localStorage.setItem("rol",       data.rol);
+      localStorage.setItem("nombre",    data.nombre);
+      localStorage.setItem("usuarioId", String(data.usuarioId));
       toast.success(`Bienvenido, ${data.nombre}`);
-      if (data.rol === "DOCENTE") navigate("/tutor");
-      else navigate("/user");
+      setIntentosRestantes(null);
+      navigate("/admin");
     } catch {
-      toast.error("Correo o contraseña incorrectos");
+      try {
+        const { login } = await import("../../api/auth");
+        const data = await login(email, password);
+        toast.success(`Bienvenido, ${data.user?.first_name ?? 'Usuario'}`);
+        setIntentosRestantes(null);
+        const rol = data.user?.role?.name;
+        if (rol === "TUTOR") navigate("/tutor");
+        else if (rol === "ADMIN") navigate("/admin");
+        else navigate("/user");
+      } catch (err: any) {
+        const errData = err?.response?.data ?? {};
+        // DRF envuelve los valores en arrays — los desempaquetamos
+        const get = (v: any) => Array.isArray(v) ? v[0] : v;
+
+        // DRF serializa los valores del dict como strings via force_str()
+        // ej: intentos_restantes=4 llega como "4", bloqueado=False llega como "False"
+        const msg         = get(errData?.mensaje) ?? get(errData?.detail) ?? get(errData?.non_field_errors) ?? "Error al iniciar sesión";
+        const restantes   = get(errData?.intentos_restantes) ?? null;
+        const esBloqueado = get(errData?.bloqueado) ?? false;
+        const segsBloqueo = get(errData?.segundos_restantes) ?? 0;
+
+        // Parsear intentos como número (puede venir como int o string "4")
+        const restantesNum = restantes !== null ? parseInt(String(restantes), 10) : null;
+        setIntentosRestantes(restantesNum !== null && !isNaN(restantesNum) ? restantesNum : null);
+
+        // Sólo bloqueado si llega explícitamente como true / "true" / "True" (no "False")
+        const realmente = esBloqueado === true || esBloqueado === 'true' || esBloqueado === 'True';
+        setBloqueado(realmente);
+        if (realmente) {
+          const segs = parseInt(String(segsBloqueo), 10);
+          if (!isNaN(segs) && segs > 0) setSegundosBloqueo(segs);
+        }
+
+        toast.error(typeof msg === 'string' ? msg : "Error al iniciar sesión");
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <main className="overflow-x-hidden w-full max-w-full bg-[#050810]">
@@ -276,15 +328,70 @@ export function Landing() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-slate-300 text-sm font-medium">Contraseña</Label>
-                  <Input
-                    type="password" placeholder="••••••••" required
-                    value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 bg-white/[0.06] border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl focus-visible:ring-1 focus-visible:ring-[#6366F1] focus-visible:border-[#6366F1] transition-colors"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"} placeholder="••••••••" required
+                      value={password} onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 bg-white/[0.06] border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl focus-visible:ring-1 focus-visible:ring-[#6366F1] focus-visible:border-[#6366F1] transition-colors pr-12"
+                    />
+                    {password && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
                 </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-xs text-[#6366F1] hover:text-[#818CF8] transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+
+                {/* Contador de intentos */}
+                {intentosRestantes !== null && !bloqueado && (
+                  <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2.5">
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-2 h-2 rounded-full ${
+                            i < intentosRestantes ? "bg-orange-400" : "bg-orange-900/40"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-orange-300 text-xs">
+                      {intentosRestantes} intento{intentosRestantes !== 1 ? "s" : ""} restante{intentosRestantes !== 1 ? "s" : ""} antes del bloqueo
+                    </span>
+                  </div>
+                )}
+
+                {/* Temporizador de bloqueo */}
+                {bloqueado && segundosBloqueo > 0 && (
+                  <div className="flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                    <div className="space-y-0.5">
+                      <p className="text-red-300 text-xs font-medium">Cuenta bloqueada temporalmente</p>
+                      <p className="text-red-400/70 text-xs">Recibirás un correo de notificación</p>
+                    </div>
+                    <div className="text-red-300 font-mono text-lg font-bold">
+                      {formatTime(segundosBloqueo)}
+                    </div>
+                  </div>
+                )}
+
                 <Button
-                  type="submit" disabled={isLoading}
-                  className="w-full h-12 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-xl font-semibold mt-1 transition-all duration-150 active:scale-[0.98] shadow-lg shadow-[#6366F1]/20"
+                  type="submit" disabled={isLoading || bloqueado}
+                  className={`w-full h-12 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-xl font-semibold mt-1 transition-all duration-150 active:scale-[0.98] shadow-lg shadow-[#6366F1]/20 ${
+                    bloqueado ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
