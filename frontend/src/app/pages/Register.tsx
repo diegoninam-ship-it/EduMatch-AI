@@ -3,11 +3,14 @@ import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Sparkles, ArrowLeft, UserPlus } from "lucide-react";
+import { Sparkles, ArrowLeft, UserPlus, GraduationCap, BookOpen, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export function Register() {
   const navigate = useNavigate();
+  const [rol, setRol] = useState<'STUDENT' | 'TUTOR'>('STUDENT');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState({
     nombre: "",
     correo: "",
@@ -35,7 +38,7 @@ export function Register() {
     setIsLoading(true);
     try {
       const { register } = await import("../../api/auth");
-      await register(formData.nombre, formData.correo, formData.password, formData.password_confirm);
+      await register(formData.nombre, formData.correo, formData.password, formData.password_confirm, rol);
       toast.success("Cuenta creada. Configurando tu perfil...");
       navigate("/onboarding");
     } catch (error: any) {
@@ -128,8 +131,38 @@ export function Register() {
               Crear cuenta
             </h1>
             <p className="text-slate-400 text-sm">
-              Tu cuenta se crea automáticamente como estudiante.
+              Selecciona tu rol para comenzar.
             </p>
+          </div>
+
+          {/* Selector de rol */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <button
+              type="button"
+              onClick={() => setRol('STUDENT')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-150 ${
+                rol === 'STUDENT'
+                  ? 'border-[#6366F1] bg-[#6366F1]/10 text-white'
+                  : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:border-white/20'
+              }`}
+            >
+              <BookOpen className={`w-6 h-6 ${rol === 'STUDENT' ? 'text-[#818CF8]' : ''}`} />
+              <span className="text-sm font-semibold">Estudiante</span>
+              <span className="text-xs opacity-60">Quiero aprender</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRol('TUTOR')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-150 ${
+                rol === 'TUTOR'
+                  ? 'border-[#6366F1] bg-[#6366F1]/10 text-white'
+                  : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:border-white/20'
+              }`}
+            >
+              <GraduationCap className={`w-6 h-6 ${rol === 'TUTOR' ? 'text-[#818CF8]' : ''}`} />
+              <span className="text-sm font-semibold">Docente</span>
+              <span className="text-xs opacity-60">Quiero enseñar</span>
+            </button>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
@@ -169,16 +202,27 @@ export function Register() {
               <Label htmlFor="password" className="text-slate-300 text-sm font-medium">
                 Contraseña
               </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="h-12 bg-white/[0.05] border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl focus-visible:ring-1 focus-visible:ring-[#6366F1] focus-visible:border-[#6366F1] transition-colors"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="h-12 bg-white/[0.05] border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl focus-visible:ring-1 focus-visible:ring-[#6366F1] focus-visible:border-[#6366F1] transition-colors pr-12"
+                />
+                {formData.password && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                )}
+              </div>
               <p className="text-slate-600 text-xs">Mínimo 6 caracteres</p>
             </div>
 
@@ -186,16 +230,27 @@ export function Register() {
               <Label htmlFor="password_confirm" className="text-slate-300 text-sm font-medium">
                 Confirmar contraseña
               </Label>
-              <Input
-                id="password_confirm"
-                name="password_confirm"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password_confirm}
-                onChange={handleChange}
-                required
-                className="h-12 bg-white/[0.05] border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl focus-visible:ring-1 focus-visible:ring-[#6366F1] focus-visible:border-[#6366F1] transition-colors"
-              />
+              <div className="relative">
+                <Input
+                  id="password_confirm"
+                  name="password_confirm"
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.password_confirm}
+                  onChange={handleChange}
+                  required
+                  className="h-12 bg-white/[0.05] border-white/[0.08] text-white placeholder:text-slate-600 rounded-xl focus-visible:ring-1 focus-visible:ring-[#6366F1] focus-visible:border-[#6366F1] transition-colors pr-12"
+                />
+                {formData.password_confirm && (
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                )}
+              </div>
             </div>
 
             <Button

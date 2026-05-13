@@ -52,6 +52,15 @@ class RegisterSerializer(serializers.Serializer):
         }
     )
 
+    rol = serializers.ChoiceField(
+        choices=['STUDENT', 'TUTOR'],
+        default='STUDENT',
+        required=False,
+        error_messages={
+            'invalid_choice': 'El rol debe ser STUDENT o TUTOR',
+        }
+    )
+
     def validate_correo(self, value):
         """Validar que el email no esté registrado"""
         if User.objects.filter(email=value).exists():
@@ -92,8 +101,12 @@ class RegisterSerializer(serializers.Serializer):
         first_name = nombre_parts[0]
         last_name = nombre_parts[1] if len(nombre_parts) > 1 else ''
 
-        # Obtener rol de estudiante por defecto
-        student_role = Role.objects.get(name=Role.RoleChoices.STUDENT)
+        # Obtener rol según lo enviado (por defecto STUDENT)
+        rol_nombre = validated_data.get('rol', 'STUDENT')
+        try:
+            rol = Role.objects.get(name=rol_nombre)
+        except Role.DoesNotExist:
+            rol = Role.objects.get(name=Role.RoleChoices.STUDENT)
 
         # Crear usuario
         user = User.objects.create_user(
@@ -101,7 +114,7 @@ class RegisterSerializer(serializers.Serializer):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            role=student_role,
+            role=rol,
             is_active=True
         )
 
