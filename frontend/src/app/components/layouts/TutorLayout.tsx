@@ -1,8 +1,14 @@
 import { Outlet, NavLink, useNavigate } from "react-router";
 import { Home, Calendar, Clock, User, LogOut, GraduationCap } from "lucide-react";
+import { logout } from "../../../api/auth";
 
 export function TutorLayout() {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/", { replace: true });
+  };
 
   const navItems = [
     { to: "/tutor", icon: Home, label: "Dashboard", end: true },
@@ -66,7 +72,7 @@ export function TutorLayout() {
         <div className="px-3 pb-5">
           <div className="h-px bg-white/[0.04] mb-3" />
           <button
-            onClick={() => navigate("/")}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-white/[0.04] hover:text-slate-300 transition-all duration-150"
           >
             <LogOut className="w-4 h-4" />
