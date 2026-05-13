@@ -97,6 +97,19 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=False
     )
 
+    login_attempts = models.IntegerField(
+        default=0
+    )
+
+    blocked_until = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    email_verified = models.BooleanField(
+        default=False
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )
