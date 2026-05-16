@@ -1,4 +1,5 @@
 import api from './client';
+import springApi from './springboot';
 
 export const getPerfilDocente = async () => {
   const response = await api.get('/docente/perfil');
@@ -27,4 +28,15 @@ export const agregarDisponibilidad = async (datos: any) => {
 
 export const eliminarDisponibilidad = async (id: number) => {
   await api.delete(`/disponibilidad/${id}`);
+};
+
+// Spring Boot API endpoints
+export const getMisSesionesDocente = async () => {
+  const response = await springApi.get('/api/sesiones/mis-sesiones');
+  return response.data;
+};
+
+export const cambiarEstadoSesion = async (id: string, estado: string) => {
+  const response = await springApi.patch(`/api/sesiones/${id}/estado?estado=${estado}`);
+  return response.data;
 };
