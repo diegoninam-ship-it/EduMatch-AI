@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "motion/react";
 import {
   Search, Star, Plus, MoreVertical, Eye, CheckCircle2,
-  Clock, RefreshCw, XCircle,
+  Clock, RefreshCw, XCircle, Trash2,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -12,7 +12,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
-import { getDocentes, verificarDocente } from "../../../api/admin";
+import {
+  getDocentes, getTutoresV1, verificarDocente,
+  registrarUsuarioTutor, crearTutor, eliminarTutor,
+} from "../../../api/admin";
 import { toast } from "sonner";
 
 interface Tutor {
@@ -38,18 +41,19 @@ const MOCK_TUTORS: Tutor[] = [
 ];
 
 function mapApiTutor(d: any): Tutor {
+  // TutorSerializer devuelve: full_name, email (top-level), biography, rating, hourly_rate, experience_years, is_available
   return {
     id: d.id,
-    name: d.usuario?.nombre ?? (d.user ? `${d.user.firstName} ${d.user.lastName}` : "—"),
-    email: d.usuario?.correo ?? d.user?.email ?? "—",
-    specialty: d.biografia ?? d.biography ?? "—",
-    rating: Number(d.rating_promedio ?? d.rating ?? 0),
-    reviews: d.total_sesiones ?? 0,
-    hourlyRate: Number(d.tarifa_hora ?? d.hourlyRate ?? 0),
-    sessionsCompleted: d.total_sesiones ?? 0,
-    status: d.verificado || d.isActive ? "active" : "pending",
-    availability: d.isAvailable ? "Disponible" : "Ocupado",
-    certification: d.experiencia ?? d.experience ?? "—",
+    name: d.full_name ?? (`${d.user?.first_name ?? ""} ${d.user?.last_name ?? ""}`.trim() || "—"),
+    email: d.email ?? d.user?.email ?? "—",
+    specialty: d.biography ?? "—",
+    rating: Number(d.rating ?? 0),
+    reviews: 0,
+    hourlyRate: Number(d.hourly_rate ?? 0),
+    sessionsCompleted: 0,
+    status: d.is_available ? "active" : "pending",
+    availability: d.is_available ? "Disponible" : "Ocupado",
+    certification: d.experience_years != null ? `${d.experience_years} años de experiencia` : "—",
   };
 }
 
@@ -60,19 +64,93 @@ export function TutorsManagement() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [verifying, setVerifying] = useState<number | string | null>(null);
+  const [deleting, setDeleting] = useState<number | string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({
+    nombre: "", correo: "", password: "", passwordConfirm: "",
+    biography: "", experienceYears: "", hourlyRate: "",
+  });
+
+  const resetForm = () => {
+    setForm({ nombre: "", correo: "", password: "", passwordConfirm: "", biography: "", experienceYears: "", hourlyRate: "" });
+    setFormError("");
+  };
 
   const fetchTutors = useCallback((silent = false) => {
     if (!silent) setLoading(true);
-    getDocentes()
+    getTutoresV1()
       .then((data) => {
         const list = Array.isArray(data) ? data.map(mapApiTutor) : [];
         setTutors(list.length > 0 ? list : MOCK_TUTORS);
       })
-      .catch(() => setTutors(MOCK_TUTORS))
+      .catch(() =>
+        getDocentes()
+          .then((data) => {
+            const list = Array.isArray(data) ? data.map(mapApiTutor) : [];
+            setTutors(list.length > 0 ? list : MOCK_TUTORS);
+          })
+          .catch(() => setTutors(MOCK_TUTORS))
+      )
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchTutors(); }, [fetchTutors]);
+
+  const handleAddTutor = async () => {
+    if (!form.nombre || !form.correo || !form.password) {
+      setFormError("Completa los campos obligatorios");
+      return;
+    }
+    if (form.password !== form.passwordConfirm) {
+      setFormError("Las contraseñas no coinciden");
+      return;
+    }
+    setSaving(true);
+    setFormError("");
+    try {
+      const { user } = await registrarUsuarioTutor({
+        nombre: form.nombre,
+        correo: form.correo,
+        password: form.password,
+        password_confirm: form.passwordConfirm,
+      });
+      await crearTutor({
+        user: user.id,
+        biography: form.biography,
+        experience_years: parseInt(form.experienceYears) || 0,
+        hourly_rate: parseFloat(form.hourlyRate) || 0,
+        is_available: true,
+      });
+      toast.success("Tutor registrado exitosamente");
+      setAddOpen(false);
+      resetForm();
+      fetchTutors(true);
+    } catch (err: unknown) {
+      let msg = "Error al registrar el tutor";
+      try {
+        const parsed = JSON.parse((err as Error).message);
+        const vals = Object.values(parsed).flat() as string[];
+        if (vals.length) msg = vals.join(". ");
+      } catch {}
+      setFormError(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEliminar = async (id: number | string) => {
+    setDeleting(id);
+    try {
+      await eliminarTutor(id);
+      setTutors((prev) => prev.filter((t) => t.id !== id));
+      toast.success("Tutor eliminado");
+    } catch {
+      toast.error("No se pudo eliminar el tutor");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const handleVerificar = async (id: number | string, activo: boolean) => {
     setVerifying(id);
@@ -296,6 +374,14 @@ export function TutorsManagement() {
                               {verifying === tutor.id ? "..." : "Desactivar"}
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem
+                            className="rounded-lg text-red-600 cursor-pointer"
+                            onClick={() => handleEliminar(tutor.id)}
+                            disabled={deleting === tutor.id}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            {deleting === tutor.id ? "Eliminando..." : "Eliminar"}
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -308,37 +394,94 @@ export function TutorsManagement() {
       </div>
 
       {/* Add Tutor Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={addOpen} onOpenChange={(v) => { setAddOpen(v); if (!v) resetForm(); }}>
         <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-800">Agregar nuevo tutor</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-3 py-2">
             <div>
-              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre completo</Label>
-              <Input placeholder="Ej: Juan Pérez" className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]" />
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre completo *</Label>
+              <Input
+                placeholder="Ej: Juan Pérez"
+                value={form.nombre}
+                onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]"
+              />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</Label>
-              <Input type="email" placeholder="juan@tutors.com" className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]" />
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Correo electrónico *</Label>
+              <Input
+                type="email"
+                placeholder="juan@tutors.com"
+                value={form.correo}
+                onChange={(e) => setForm((f) => ({ ...f, correo: e.target.value }))}
+                className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contraseña *</Label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]"
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Confirmar *</Label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.passwordConfirm}
+                  onChange={(e) => setForm((f) => ({ ...f, passwordConfirm: e.target.value }))}
+                  className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]"
+                />
+              </div>
             </div>
             <div>
-              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Especialidad</Label>
-              <Input placeholder="Ej: Matemáticas Avanzadas" className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]" />
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Biografía / Especialidad</Label>
+              <Textarea
+                placeholder="Especialidad, títulos y experiencia del tutor..."
+                value={form.biography}
+                onChange={(e) => setForm((f) => ({ ...f, biography: e.target.value }))}
+                className="mt-1.5 rounded-xl resize-none border-slate-200 bg-[#F8F9FC]"
+                rows={3}
+              />
             </div>
-            <div>
-              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarifa por hora ($)</Label>
-              <Input type="number" placeholder="25" className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Años de experiencia</Label>
+                <Input
+                  type="number"
+                  placeholder="3"
+                  value={form.experienceYears}
+                  onChange={(e) => setForm((f) => ({ ...f, experienceYears: e.target.value }))}
+                  className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]"
+                />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarifa por hora ($)</Label>
+                <Input
+                  type="number"
+                  placeholder="25"
+                  value={form.hourlyRate}
+                  onChange={(e) => setForm((f) => ({ ...f, hourlyRate: e.target.value }))}
+                  className="mt-1.5 rounded-xl border-slate-200 bg-[#F8F9FC]"
+                />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Certificación / Experiencia</Label>
-              <Textarea placeholder="Títulos, certificaciones, años de experiencia..." className="mt-1.5 rounded-xl resize-none border-slate-200 bg-[#F8F9FC]" rows={3} />
-            </div>
+            {formError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{formError}</p>
+            )}
             <Button
-              className="w-full h-11 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-xl text-sm font-semibold transition-all active:scale-[0.98] shadow-sm shadow-[#6366F1]/20"
-              onClick={() => { toast.success("Tutor agregado exitosamente"); setAddOpen(false); }}
+              className="w-full h-11 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-xl text-sm font-semibold transition-all active:scale-[0.98] shadow-sm shadow-[#6366F1]/20 disabled:opacity-60"
+              onClick={handleAddTutor}
+              disabled={saving}
             >
-              Guardar tutor
+              {saving ? "Registrando tutor..." : "Guardar tutor"}
             </Button>
           </div>
         </DialogContent>

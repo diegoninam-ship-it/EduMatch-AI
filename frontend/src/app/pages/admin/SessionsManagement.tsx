@@ -36,28 +36,23 @@ const statusConfig = {
 };
 
 function mapApiSession(s: any): Sesion {
-  const raw = s.estado ?? s.status ?? "PROGRAMADA";
+  // SessionSerializer devuelve: student_name, tutor_name, subject_name, session_date, start_time, end_time, status, notes
+  const raw = s.status ?? s.estado ?? "PENDING";
   const status: Sesion["status"] =
-    ["PROGRAMADA", "PENDING", "CONFIRMED"].includes(raw) ? "scheduled"
-    : ["EN_PROGRESO", "IN_PROGRESS"].includes(raw) ? "in-progress"
-    : ["COMPLETADA", "COMPLETED"].includes(raw) ? "completed"
+    ["PENDING", "CONFIRMED", "PROGRAMADA"].includes(raw)   ? "scheduled"
+    : ["IN_PROGRESS", "EN_PROGRESO"].includes(raw)         ? "in-progress"
+    : ["COMPLETED", "COMPLETADA"].includes(raw)            ? "completed"
     : "cancelled";
   return {
     id: s.id,
-    student: s.estudiante?.usuario?.nombre
-      ?? (s.student?.user ? `${s.student.user.firstName} ${s.student.user.lastName}` : "—"),
-    tutor: s.docente?.usuario?.nombre
-      ?? (s.tutor?.user ? `${s.tutor.user.firstName} ${s.tutor.user.lastName}` : "—"),
-    subject: s.materia ?? s.subject?.name ?? "—",
-    topic: s.notas ?? s.notes ?? "—",
-    date: s.fecha ?? s.sessionDate ?? "",
-    time: s.hora_inicio
-      ? `${s.hora_inicio} – ${s.hora_fin ?? ""}`
-      : s.startTime
-      ? `${s.startTime} – ${s.endTime ?? ""}`
-      : "—",
+    student: s.student_name ?? "—",
+    tutor:   s.tutor_name   ?? "—",
+    subject: s.subject_name ?? s.subject?.name ?? "—",
+    topic:   s.notes        ?? "—",
+    date:    s.session_date ?? "",
+    time:    s.start_time   ? `${s.start_time} – ${s.end_time ?? ""}` : "—",
     status,
-    price: s.precio ?? s.price ?? 0,
+    price:   s.price ?? 0,
   };
 }
 
